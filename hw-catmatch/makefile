@@ -1,3 +1,3 @@
 a_command:
 	gcc -o catmatch catmatch.c
-	./catmatch lorem-ipsum.txt
+	CATMATCH_PATTERN=al ./catmatch lorem-ipsum.txt
