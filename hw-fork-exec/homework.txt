@@ -1,0 +1,144 @@
+1. Prints the pid of the current process to stdout, sleeps for 30 seconds, exits if no argument is passed in, prints what command it's going to run, replaces the current process with the one specified on the command line, prints end of program once the process is returned.
+
+2. The last line will print when the executable that was passed in is done running
+
+3.
+```
+./exec /bin/cat
+Program "./exec" has pid 1894743. Sleeping.
+Running exec of "/bin/cat"
+^C
+```
+
+4.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1896386 -o pid
+    PID
+1896386
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1896386 -o pid
+    PID
+1896386
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ 
+
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1895552 -o user,pid,ppid,state,command
+USER         PID    PPID S COMMAND
+sdb229   1895552 1892440 S ./exec /bin/cat
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1895552 -o user,pid,ppid,state,command
+USER         PID    PPID S COMMAND
+sdb229   1895552 1892440 S /bin/cat
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ 
+```
+
+5. They both have user, pid, and ppid the same. The thing that has changed is what command is running. In the first it is just `./exec /bin/cat` and in the second it is `/bin/cat`
+
+6. execve returns an error and then the next line of code runs which is the print statement
+```
+./exec ./does-not-exist
+Program "./exec" has pid 1897008. Sleeping.
+Running exec of "./does-not-exist"
+End of program "./exec".
+```
+
+7. Prints the pid, forks the rest of the program, prints section A with two different processes, one process prints the B section and the other process prints the C section and each section ends when they hit their respective exit command.
+
+8. Parent runs A and C. Child runs A and B. D is never run because both the child and parent exit before.
+
+9. 
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1899220 -p 1899221 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1899220 1892440 S ./fork
+sdb229   1899221 1899220 S  \_ ./fork
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1899220 -p 1899221 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1899220 1892440 S ./fork
+sdb229   1899221 1899220 Z  \_ [fork] <defunct>
+```
+
+10. The first command shows that ./fork and a fork of ./fork is running. The second command shows that the process is a Zombie and is waiting for its parent.
+
+11. wait(NULL); You can include this in the parent before the printf("Section c\n"); command.
+
+12.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1900969 -p 1900970 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1900969 1892440 S ./fork
+sdb229   1900970 1900969 S  \_ ./fork
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1900969 -p 1900970 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1900969 1892440 S ./fork
+```
+
+13. The child process has been waited on and termintated.
+
+14.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1904099 -p 1904100 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1904099 1892440 S ./fork
+sdb229   1904100 1904099 S  \_ ./fork
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1904099 -p 1904100 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+sdb229   1904100       1 S ./fork
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ps -p 1904099 -p 1904100 -o user,pid,ppid,state,command --forest
+USER         PID    PPID S COMMAND
+```
+
+15. The first command is as normal. The second command shows that the parent has been termintated but the child has ppid of 1 and shows that it is running the `./fork` command.
+
+16. 
+```
+BEFORE FORK
+SECTION A
+SECTION A
+SECTION B
+SECTION C
+```
+
+17. I think because this processor has multiple cores that it prints both processes alternating.
+
+18.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ ./fork 
+Starting program; process has pid 1913211
+Section A;  pid 1913211
+Section A;  pid 1913213
+Section B; pid 1913213
+Section C
+hello from Section B
+```
+
+19.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ echo foobar | ./fork /bin/cat
+Starting program; process has pid 1914218
+Section A;  pid 1914218
+Section A;  pid 1914220
+Section B; pid 1914220
+Program "./fork" has pid 1914220. Sleeping.
+Running exec of "/bin/cat"
+foobar
+Section C
+```
+
+20.
+```
+sdb229@acadia:~/CS324-SystemsProgramming/byu-cs324/hw-fork-exec$ echo foobar | ./fork /bin/cat
+Starting program; process has pid 1915124
+Section A;  pid 1915124
+Section A;  pid 1915126
+Section B; pid 1915126
+Program "./fork" has pid 1915126. Sleeping.
+Running exec of "/bin/cat"
+Section C
+```
+
+```
+BEFORE FORK
+SECTION A
+SECTION A
+SECTION B
+foobar
+SECTION C
+```
