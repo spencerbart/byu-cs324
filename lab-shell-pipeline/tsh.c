@@ -115,10 +115,9 @@ void eval(char *cmdline)
     int cmds[MAXARGS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
-    int bg = parseline(cmdline, argv);
+    parseline(cmdline, argv);
     int num_commands = parseargs(argv, cmds, stdin_redir, stdout_redir);
     pid_t pid;
-    sigset_t mask;
     int pipefds[(num_commands-1)*2];
     int first_pid[MAXARGS];
 
