@@ -106,6 +106,48 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    char *argv[MAXARGS];
+    int cmds[MAXARGS];
+    int stdin_redir[MAXARGS];
+    int stdout_redir[MAXARGS];
+    int bg = parseline(cmdline,argv);
+    int cmdindex = parseargs(argv, cmds, stdin_redir, stdout_redir);
+    pid_t pid;
+    sigset_t mask;
+
+    if(argv[0] == NULL){ return; } 
+
+    if(!builtin_cmd(argv)) {
+        
+        size_t n = 2;
+
+        printf("size of n %d\n", n);
+
+        int i = 0;
+
+        // if (cmds[i] < 0) {
+        //     printf("cmds hit null on %d\n", i);
+        //     break;
+        // }
+        if (stdin_redir[cmds[i]] > 1) {
+            printf("Standard input redirection\nExample: /bin/cat < test.txt\n");
+        } else if (stdout_redir[cmds[i]] > 1) {
+            printf("Standard output redirection\nExample: /bin/grep > test2.txt");
+        }
+
+        if ((pid = fork()) == 0) {
+            setpgid(0, 0);
+
+            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0) {
+                fprintf(stderr, "%s: Command not found\n", argv[cmds[i]]);
+                exit(0);
+            }
+
+        }
+        // i++;
+        
+    }
+
     return;
 }
 
@@ -233,6 +275,9 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
+    if (!strcmp(argv[0], "quit")) {
+        exit(0);
+    }
     return 0;     /* not a builtin command */
 }
 
