@@ -119,65 +119,119 @@ void eval(char *cmdline)
     int num_commands = parseargs(argv, cmds, stdin_redir, stdout_redir);
     pid_t pid;
     sigset_t mask;
+    int pipefds[(num_commands-1)*2];
+    int first_pid[MAXARGS];
 
     if (argv[0] == NULL)
     {
         return;
     }
 
+    for( int i = 0; i < num_commands - 1; i++ ){
+        if( pipe(pipefds + i*2) < 0 ){
+            // error
+            unix_error("Failed to open pipe");
+        }
+    }
+
     if (!builtin_cmd(argv))
     {
-
-        int i = 0;
-
-        if ((pid = fork()) == 0)
+        for (int i = 0; i < num_commands; i++) 
         {
-            setpgid(0, 0);
-
-            if (stdin_redir[cmds[i]] > 1)
+            if ((pid = fork()) == 0)
             {
-                // printf("Standard input redirection\nExample: /bin/cat < test.txt\n");
+                if (i == 0) {
+                    first_pid[i] = pid;
 
-                FILE *fp;
+                    if (stdin_redir[i] > -1)
+                    {
+                        FILE *fp;
 
-                fp = fopen(argv[stdin_redir[cmds[i]]], "r");
+                        fp = fopen(argv[stdin_redir[cmds[i]]], "r");
 
-                int in_fd = fileno(fp); // number of the file descriptor
+                        int in_fd = fileno(fp); // number of the file descriptor
 
-                dup2(in_fd, 0); // this is redirecting the new file to where standard in was at which is 0
+                        dup2(in_fd, 0); // this is redirecting the new file to where standard in was at which is 0
 
-                close(in_fd); // closes file
+                        close(in_fd); // closes file
+                    }
+                    if (num_commands - 1 > 0)
+                    {
+                        dup2(pipefds[1], 1);
+                    }
+                }
+                if (i == (num_commands - 1))
+                {
+                    if (stdout_redir[i] > -1) {
+                        FILE *fp;
+
+                        fp = fopen(argv[stdout_redir[cmds[i]]], "w+");
+
+                        int out_fd = fileno(fp); // number of the file descriptor
+
+                        dup2(out_fd, 1); // this is redirecting the new file to where standard out was at which is 1
+
+                        close(out_fd); // closes file
+                    }
+
+                    if (num_commands > 1)
+                    {
+                        dup2(pipefds[((num_commands - 1) * 2) - 2], 0);
+                    }
+                }
+                if (i > 0 && i < num_commands - 1)
+                {
+                    dup2(pipefds[(i * 2) - 2], 0);
+                    dup2(pipefds[(i * 2) + 1], 1);
+                }
+
+                // if (stdin_redir[cmds[i]] > 1)
+                // {
+                //     // printf("Standard input redirection\nExample: /bin/cat < test.txt\n");
+
+                    
+                // }
+                // if (stdout_redir[cmds[i]] > 1)
+                // {
+                //     // printf("Standard output redirection\nExample: /bin/grep > test2.txt");
+
+                    
+                // }
+
+                for (int j = 0; j < (num_commands - 1) * 2; j++)
+                {
+                    close(pipefds[j]);
+                }
+
+                if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0)
+                {
+                    fprintf(stderr, "%s: Command not found\n", argv[cmds[i]]);
+                    exit(1);
+                }
+
+                exit(0);
             }
-            if (stdout_redir[cmds[i]] > 1)
+            else
             {
-                // printf("Standard output redirection\nExample: /bin/grep > test2.txt");
-
-                FILE *fp;
-
-                fp = fopen(argv[stdout_redir[cmds[i]]], "w+");
-
-                int out_fd = fileno(fp); // number of the file descriptor
-
-                dup2(out_fd, 1); // this is redirecting the new file to where standard out was at which is 1
-
-                close(out_fd); // closes file
+                first_pid[i] = pid;
+                // this is the parent
+                setpgid(pid, first_pid[0]);
             }
-
-            if (execve(argv[cmds[i]], &argv[cmds[i]], environ) < 0)
-            {
-                fprintf(stderr, "%s: Command not found\n", argv[cmds[i]]);
-                exit(1);
-            }
-
-            exit(0);
         }
-        else
+
+        for (size_t i = 0; i < (num_commands -1) * 2; i++)
         {
-            // this is the parent
-            int return_status;
-            waitpid(pid, &return_status, 0);
+            close(pipefds[i]);
         }
-        // i++;
+        
+
+        int return_status;
+        for (size_t i = 0; i < num_commands; i++)
+        {
+            waitpid(-1, &return_status, 0);
+        }
+        
+        return;
     }
 
     return;
