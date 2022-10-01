@@ -32,40 +32,69 @@ int main(int argc, char *argv[]) {
 		sleep(1);
 		break;
 	case '1': // pass
-		kill(pid, SIGKILL);
+		kill(pid, 12);
 		sleep(1);
+		kill(pid, SIGTERM);
+		// kill(pid, SIGKILL);
+		// sleep(1);
 		break;
 	case '2': // pass
 		kill(pid, SIGHUP);
 		sleep(10);
-		kill(pid, SIGKILL);
+		kill(pid, 12);
 		sleep(1);
+		kill(pid, SIGTERM);
 		break;
-	case '3':
+	case '3': // pass
 		kill(pid, SIGHUP);
-		sleep(3);
-		kill(pid, SIGHUP);
-		sleep(5);
-		kill(pid, SIGKILL);
 		sleep(1);
-		break;
-	case '4':
-		break;
-	case '5': // pass
 		kill(pid, SIGHUP);
-		sleep(3);
-		kill(pid, SIGKILL);
+		// sleep(3);
+		sleep(8);
+		kill(pid, 12);
 		sleep(1);
+		kill(pid, SIGTERM);
 		break;
-	case '6':
+	case '4': // pass
+		kill(pid, 12);
+		// sleep(1);
 		kill(pid, SIGHUP);
-		sleep(5);
+		sleep(1);
+		kill(pid, SIGINT);
+		// sleep(3);
+		sleep(8);
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGTERM);
+		break;
+	case '5':
+		kill(pid, SIGHUP);
+		sleep(1);
+		kill(pid, 31);
+		sleep(1);
 		kill(pid, 10);
+		sleep(1);
+		// kill(pid, SIGCHLD);
+		// // kill(pid, SIGINT);
+		// sleep(1);
+
+
+
+
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGTERM);
+		break;
+	case '6': // pass
+		kill(pid, SIGHUP); // print 1 and 2
+		sleep(5);
+		kill(pid, 10); // set foo to 0
+		sleep(1);
+		kill(pid, 16);
 		sleep(1);
 		kill(pid, 12);
 		sleep(1);
-		kill(pid, SIGKILL);
-		sleep(1);
+		kill(pid, SIGTERM);
 		break;
 	case '7': // pass
 		kill(pid, SIGHUP);
@@ -74,12 +103,32 @@ int main(int argc, char *argv[]) {
 		sleep(1);
 		kill(pid, 12);
 		sleep(1);
-		kill(pid, SIGKILL);
-		sleep(1);
+		kill(pid, SIGTERM);
 		break;
-	case '8':
+	case '8': // pass
+		kill(pid, 31); // set block to 1
+		sleep(1);
+		kill(pid, SIGHUP); // print 1 and 2
+		sleep(5);
+		kill(pid, 10); // set foo to 0
+		sleep(1);
+		kill(pid, 30); // set foo to 6
+		sleep(1);
+		kill(pid, SIGTERM); // print foo
+		sleep(1);
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGTERM);
 		break;
 	case '9': 
+		kill(pid, SIGQUIT);
+		kill(pid, 31);
+		sleep(10);
+		// kill(pid, SIGINT);
+		// sleep(5);
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGTERM);
 		break;
 
 	}
