@@ -27,21 +27,55 @@ int main(int argc, char *argv[]) {
 	sigaction(SIGINT, &sigact, NULL);
 
 	switch (scenario[0]) {
-	case '0':
+	case '0': // pass
+		kill(pid, SIGHUP);
+		sleep(1);
 		break;
-	case '1':
+	case '1': // pass
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
-	case '2':
+	case '2': // pass
+		kill(pid, SIGHUP);
+		sleep(10);
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
 	case '3':
+		kill(pid, SIGHUP);
+		sleep(3);
+		kill(pid, SIGHUP);
+		sleep(5);
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
 	case '4':
 		break;
-	case '5':
+	case '5': // pass
+		kill(pid, SIGHUP);
+		sleep(3);
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
 	case '6':
+		kill(pid, SIGHUP);
+		sleep(5);
+		kill(pid, 10);
+		sleep(1);
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
-	case '7':
+	case '7': // pass
+		kill(pid, SIGHUP);
+		sleep(5);
+		kill(pid, 10);
+		sleep(1);
+		kill(pid, 12);
+		sleep(1);
+		kill(pid, SIGKILL);
+		sleep(1);
 		break;
 	case '8':
 		break;
