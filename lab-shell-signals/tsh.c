@@ -56,7 +56,7 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 /* Function prototypes */
 
 /* Here are the functions that you will implement */
-void eval(char *cmdline);
+void eval(char *cmdline, char **argv, int is_bg_task);
 int builtin_cmd(char **argv);
 void do_bgfg(char **argv);
 void waitfg(pid_t pid);
@@ -146,12 +146,15 @@ int main(int argc, char **argv)
         }
 
         /* Evaluate the command line */
-        int is_bg_task = parseline(cmdline, argv);
+        int is_bg_task = parseline(cmdline, argv); // this minipulates argv (mut)
+        if (argv[0] == NULL) {
+            continue;
+        }
         int is_builtin_cmd = builtin_cmd(argv);
         if (is_builtin_cmd == 1) {
-            exit(0);
+            continue;
         }
-        eval(cmdline);
+        eval(cmdline, argv, is_bg_task);
         fflush(stdout);
         fflush(stdout);
     } 
@@ -170,9 +173,38 @@ int main(int argc, char **argv)
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
-void eval(char *cmdline) 
+void eval(char *cmdline, char **argv, int is_bg_task) 
 {
-    // printf("You entered: %s\n", cmdline);
+    // is_bg_task will return 1 (true) if it is a background task
+    int cmds[MAXARGS];
+    int stdin_redir[MAXARGS];
+    int stdout_redir[MAXARGS];
+    pid_t pid;
+
+    parseargs(argv, cmds, stdin_redir, stdout_redir);
+    
+    if ((pid = fork()) == 0) {
+        // child process
+        // unblock signals by restoring the mask
+        // run the executable using execve()
+        // if command is invalid, print and error and exit
+
+        if (execve(argv[cmds[0]], &argv[cmds[0]], environ) < 0)
+        {
+            fprintf(stderr, "%s: Command not found\n", argv[cmds[0]]);
+            exit(1);
+        }
+    } else {
+        // parent process
+        setpgid(pid, pid);
+        // printf("the pid is %d\n", pid);
+        if (!is_bg_task) {
+            waitpid(-1, NULL, 0);
+        } else {
+            addjob(jobs, pid, pid, BG, cmdline);
+            printf("It's a background task\n");
+        }
+    }
     return;
 }
 
@@ -211,26 +243,26 @@ int parseargs(char **argv, int *cmds, int *stdin_redir, int *stdout_redir)
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+            }
             stdin_redir[cmdindex] = argindex;
-	} else if (strcmp(argv[argindex], ">") == 0) {
+        } else if (strcmp(argv[argindex], ">") == 0) {
             argv[argindex] = NULL;
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+            }
             stdout_redir[cmdindex] = argindex;
-	} else if (strcmp(argv[argindex], "|") == 0) {
+        } else if (strcmp(argv[argindex], "|") == 0) {
             argv[argindex] = NULL;
             argindex++;
             if (!argv[argindex]) { /* if we have reached the end, then break */
                 break;
-	    }
+            }
             cmdindex++;
             cmds[cmdindex] = argindex;
             stdin_redir[cmdindex] = -1;
             stdout_redir[cmdindex] = -1;
-	}
+	    }
         argindex++;
     }
 
@@ -301,7 +333,7 @@ int parseline(const char *cmdline, char **argv)
 int builtin_cmd(char **argv) 
 {
     if (strcmp(argv[0], "quit") == 0) {
-        // exit(0);
+        exit(0);
         return 1;
     } else if (strcmp(argv[0], "fg") == 0 || strcmp(argv[0], "bg") == 0) {
         do_bgfg(argv);
@@ -437,11 +469,11 @@ int deletejob(struct job_t *jobs, pid_t pid)
 	return 0;
 
     for (i = 0; i < MAXJOBS; i++) {
-	if (jobs[i].pid == pid) {
-	    clearjob(&jobs[i]);
-	    nextjid = maxjid(jobs)+1;
-	    return 1;
-	}
+        if (jobs[i].pid == pid) {
+            clearjob(&jobs[i]);
+            nextjid = maxjid(jobs)+1;
+            return 1;
+        }
     }
     return 0;
 }
