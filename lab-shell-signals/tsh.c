@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     /* Install the signal handlers */
 
     /* These are the ones you will need to implement */
-    // Signal(SIGINT,  sigint_handler);   /* ctrl-c */
+    Signal(SIGINT,  sigint_handler);   /* ctrl-c */
     Signal(SIGTSTP, sigtstp_handler);  /* ctrl-z */
     Signal(SIGCHLD, sigchld_handler);  /* Terminated or stopped child */
 
@@ -212,7 +212,6 @@ void eval(char *cmdline, char **argv, int is_bg_task)
             addjob(jobs, pid, pid, FG, cmdline);
         } else {
             addjob(jobs, pid, pid, BG, cmdline);
-            printf("It's a background task\n");
         }
 
         sigprocmask(SIG_SETMASK, &old_set, NULL);
@@ -222,7 +221,7 @@ void eval(char *cmdline, char **argv, int is_bg_task)
             // waitpid(-1, NULL, 0);
             waitfg(pid);
         } else {
-            printf("[%d] [%d] %s", pid2jid(pid), pid, cmdline);
+            printf("[%d] (%d) %s", pid2jid(pid), pid, cmdline);
         }
 
     }
@@ -372,6 +371,21 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
+    if (argv[1] == NULL) {
+        return;
+        // this is an error
+    }
+    if (argv[1][0] == '%') {
+        // this is a jid
+        char *str = argv[1] + 1;
+        int num = atoi(str);
+        printf("%d\n", num);
+    } else {
+        // this is a pid
+        int num = atoi(argv[1]);
+    }
+
+
     return;
 }
 
@@ -384,14 +398,14 @@ void waitfg(pid_t pid)
         int jid = pid2jid(pid);
         struct job_t *job = getjobjid(jobs, jid);
         if (job == NULL) {
-            waitpid(pid, NULL, 0);
+            waitpid(pid, NULL, (WNOHANG | WUNTRACED));
             return;
         }
         if (job->state == FG) {
             sleep(1);
             continue;
         } else {
-            waitpid(pid, NULL, 0);
+            waitpid(-pid, NULL, (WNOHANG | WUNTRACED));
             return;
         }
 
@@ -452,6 +466,13 @@ void sigchld_handler(int sig)
  */
 void sigint_handler(int sig) 
 {
+    if (verbose) {
+        printf("sigint_handler: entering\n");
+    }
+    int pid;
+    if ((pid = fgpid(jobs)) != 0) {
+        kill(-pid, SIGINT);
+    }
     return;
 }
 
