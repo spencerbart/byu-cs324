@@ -15,6 +15,7 @@
 
 /* Misc manifest constants */
 #define MAXLINE    1024   /* max line size */
+#define MAXCMDS      20   
 #define MAXARGS     128   /* max args on a command line */
 #define MAXJOBS      16   /* max jobs at any point in time */
 #define MAXJID    1<<16   /* max job ID */
@@ -56,7 +57,7 @@ struct job_t jobs[MAXJOBS]; /* The job list */
 /* Function prototypes */
 
 /* Here are the functions that you will implement */
-void eval(char *cmdline, char **argv, int is_bg_task);
+void eval(char *cmdline);
 int builtin_cmd(char **argv);
 void do_bgfg(char **argv);
 void waitfg(pid_t pid);
@@ -146,15 +147,12 @@ int main(int argc, char **argv)
         }
 
         /* Evaluate the command line */
-        int is_bg_task = parseline(cmdline, argv); // this minipulates argv (mut)
-        if (argv[0] == NULL) {
-            continue;
-        }
-        int is_builtin_cmd = builtin_cmd(argv);
-        if (is_builtin_cmd == 1) {
-            continue;
-        }
-        eval(cmdline, argv, is_bg_task);
+        // int is_bg_task = parseline(cmdline, argv); // this minipulates argv (mut)
+        // if (argv[0] == NULL) {
+        //     continue;
+        // }
+        
+        eval(cmdline);
         fflush(stdout);
         fflush(stdout);
     } 
@@ -173,15 +171,22 @@ int main(int argc, char **argv)
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
-void eval(char *cmdline, char **argv, int is_bg_task) 
+void eval(char *cmdline) 
 {
     // is_bg_task will return 1 (true) if it is a background task
-    int cmds[MAXARGS];
+    char *argv[MAXARGS];
+    memset(argv, 0, sizeof(argv));
+    int cmds[MAXCMDS];
     int stdin_redir[MAXARGS];
     int stdout_redir[MAXARGS];
     pid_t pid;
 
+    int is_bg_task = parseline(cmdline, argv);
     parseargs(argv, cmds, stdin_redir, stdout_redir);
+
+    if (builtin_cmd(argv)) {
+        return;
+    }
 
     sigset_t new_set;
     sigemptyset(&new_set);
@@ -372,19 +377,45 @@ int builtin_cmd(char **argv)
 void do_bgfg(char **argv) 
 {
     if (argv[1] == NULL) {
+        printf("%s command requires PID or %%jobid argument\n", argv[0]);
         return;
         // this is an error
     }
+    if (atoi(argv[1]) == 0 && atoi(argv[1] + 1) == 0) {
+        printf("%s: argument must be a PID or %%jobid\n", argv[0]);
+        return;
+    }
+    int num;
     if (argv[1][0] == '%') {
         // this is a jid
         char *str = argv[1] + 1;
-        int num = atoi(str);
-        printf("%d\n", num);
+        num = atoi(str);
     } else {
         // this is a pid
-        int num = atoi(argv[1]);
-    }
+        num = atoi(argv[1]);
 
+        struct job_t *job = getjobpid(jobs, num);
+        if (job == NULL) {
+            printf("%s: No such process\n", argv[1]);
+            return;
+        }
+
+        num = pid2jid(num);
+    }
+    struct job_t *job = getjobjid(jobs, num);
+    if (job == NULL) {
+        printf("%s: No such job\n", argv[1]);
+        return;
+    }
+    if (strcmp(argv[0], "bg") == 0) {
+        job->state = BG;
+        printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
+        kill(-job->pgid, SIGCONT);
+    } else {
+        job->state = FG;
+        kill(-job->pgid, SIGCONT);
+        waitfg(job->pid);
+    }
 
     return;
 }
@@ -394,21 +425,31 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
-    while (1) {
-        int jid = pid2jid(pid);
-        struct job_t *job = getjobjid(jobs, jid);
-        if (job == NULL) {
-            waitpid(pid, NULL, (WNOHANG | WUNTRACED));
-            return;
-        }
-        if (job->state == FG) {
-            sleep(1);
-            continue;
-        } else {
-            waitpid(-pid, NULL, (WNOHANG | WUNTRACED));
-            return;
-        }
+    // while (1) {
+    //     int jid = pid2jid(pid);
+    //     struct job_t *job = getjobjid(jobs, jid);
+    //     if (job == NULL) {
+    //         waitpid(pid, NULL, (WNOHANG | WUNTRACED));
+    //         return;
+    //     }
+    //     if (job->state == FG) {
+    //         sleep(1);
+    //     } else {
+    //         waitpid(-pid, NULL, (WNOHANG | WUNTRACED));
+    //         return;
+    //     }
 
+    // }
+
+    while (1) 
+    {
+        if (fgpid(jobs) == pid)
+        {
+            sleep(1);
+        }
+        else {
+            return;
+        }
     }
     return;
 }
@@ -433,7 +474,6 @@ void sigchld_handler(int sig)
     {
         int child = waitpid(-1, &resultStatus, (WNOHANG | WUNTRACED));
 
-        // printf("Child %d \n", child);
         if (child == -1 || child == 0)
         {
             break;
@@ -446,13 +486,11 @@ void sigchld_handler(int sig)
         }
         if (WIFSIGNALED(resultStatus))
         {
-            // printf("Job was terminated by signal: %d", child);
             printf("Job [%d] (%d) terminated by signal %d\n", pid2jid(child), child, WTERMSIG(resultStatus));
             deletejob(jobs, child);
         }
         if (WIFEXITED(resultStatus))
         {
-            // printf("delete job %d\n", child);
             deletejob(jobs, child);
         }
     }
@@ -483,9 +521,8 @@ void sigint_handler(int sig)
  */
 void sigtstp_handler(int sig) 
 {
-    if (verbose) {
+    if (verbose) 
         printf("sigtstp_handler: entering\n");
-    }
     int pid;
     if ((pid = fgpid(jobs)) != 0) {
         kill(-pid, SIGTSTP);
