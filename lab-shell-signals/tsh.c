@@ -219,7 +219,7 @@ void eval(char *cmdline, char **argv, int is_bg_task)
 
         if (!is_bg_task) {
             // This is a forground task
-            waitpid(-1, NULL, 0);
+            // waitpid(-1, NULL, 0);
             waitfg(pid);
         } else {
             printf("[%d] [%d] %s", pid2jid(pid), pid, cmdline);
@@ -380,6 +380,22 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    while (1) {
+        int jid = pid2jid(pid);
+        struct job_t *job = getjobjid(jobs, jid);
+        if (job == NULL) {
+            waitpid(pid, NULL, 0);
+            return;
+        }
+        if (job->state == FG) {
+            sleep(1);
+            continue;
+        } else {
+            waitpid(pid, NULL, 0);
+            return;
+        }
+
+    }
     return;
 }
 
