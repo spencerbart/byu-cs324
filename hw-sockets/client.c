@@ -8,7 +8,8 @@
 
 #define BUF_SIZE 500
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	struct addrinfo hints;
 	struct addrinfo *result, *rp;
 	int sfd, s, j;
@@ -20,7 +21,8 @@ int main(int argc, char *argv[]) {
 
 	if (argc < 3 ||
 		((strcmp(argv[1], "-4") == 0 || strcmp(argv[1], "-6") == 0) &&
-			argc < 4)) {
+		 argc < 4))
+	{
 		fprintf(stderr, "Usage: %s [ -4 | -6 ] host port msg...\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
@@ -30,30 +32,37 @@ int main(int argc, char *argv[]) {
 	 * Try both if neither is specified. */
 	af = AF_UNSPEC;
 	if (strcmp(argv[1], "-4") == 0 ||
-			strcmp(argv[1], "-6") == 0) {
-		if (strcmp(argv[1], "-6") == 0) {
+		strcmp(argv[1], "-6") == 0)
+	{
+		if (strcmp(argv[1], "-6") == 0)
+		{
 			af = AF_INET6;
-		} else { // (strcmp(argv[1], "-4") == 0) {
+		}
+		else
+		{ // (strcmp(argv[1], "-4") == 0) {
 			af = AF_INET;
 		}
 		hostindex = 2;
-	} else {
+	}
+	else
+	{
 		hostindex = 1;
 	}
 
 	/* Obtain address(es) matching host/port */
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = af;    /* Allow IPv4, IPv6, or both, depending on
-				    what was specified on the command line. */
+	hints.ai_family = af;			 /* Allow IPv4, IPv6, or both, depending on
+							what was specified on the command line. */
 	hints.ai_socktype = SOCK_STREAM; /* Datagram socket */
 	hints.ai_flags = 0;
-	hints.ai_protocol = 0;  /* Any protocol */
+	hints.ai_protocol = 0; /* Any protocol */
 
 	/* SECTION A - pre-socket setup; getaddrinfo() */
 
 	s = getaddrinfo(argv[hostindex], argv[hostindex + 1], &hints, &result);
-	if (s != 0) {
+	if (s != 0)
+	{
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
 		exit(EXIT_FAILURE);
 	}
@@ -65,24 +74,26 @@ int main(int argc, char *argv[]) {
 
 	/* SECTION B - pre-socket setup; getaddrinfo() */
 
-	for (rp = result; rp != NULL; rp = rp->ai_next) {
+	for (rp = result; rp != NULL; rp = rp->ai_next)
+	{
 		sfd = socket(rp->ai_family, rp->ai_socktype,
-				rp->ai_protocol);
+					 rp->ai_protocol);
 		if (sfd == -1)
 			continue;
 
 		if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
-			break;  /* Success */
+			break; /* Success */
 
 		close(sfd);
 	}
 
-	if (rp == NULL) {   /* No address succeeded */
+	if (rp == NULL)
+	{ /* No address succeeded */
 		fprintf(stderr, "Could not connect\n");
 		exit(EXIT_FAILURE);
 	}
 
-	freeaddrinfo(result);   /* No longer needed */
+	freeaddrinfo(result); /* No longer needed */
 
 	/* SECTION C - interact with server; send, receive, print messages */
 
@@ -90,17 +101,20 @@ int main(int argc, char *argv[]) {
 	   datagrams, and read responses from server */
 
 	sleep(30);
-	for (j = hostindex + 2; j < argc; j++) {
+	for (j = hostindex + 2; j < argc; j++)
+	{
 		len = strlen(argv[j]) + 1;
 		/* +1 for terminating null byte */
 
-		if (len + 1 > BUF_SIZE) {
+		if (len + 1 > BUF_SIZE)
+		{
 			fprintf(stderr,
 					"Ignoring long message in argument %d\n", j);
 			continue;
 		}
 
-		if (write(sfd, argv[j], len) != len) {
+		if (write(sfd, argv[j], len) != len)
+		{
 			fprintf(stderr, "partial/failed write\n");
 			exit(EXIT_FAILURE);
 		}
@@ -112,7 +126,6 @@ int main(int argc, char *argv[]) {
 		// }
 
 		// printf("Received %zd bytes: %s\n", nread, buf);
-
 	}
 
 	exit(EXIT_SUCCESS);

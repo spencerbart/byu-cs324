@@ -18,11 +18,31 @@
 18. 3 messages were received by the server
 19. There was only 1 call to recv() and it read all 15 bytes.
 20. TCP does not preserve record boundaries.
-21. 
-22.
+21. 0ef39a3f241cdd6552ad131e01afa9171b3dab8d
+22. ./client -4 www-notls.imaal.byu.edu/cgi-bin/slowsend.cgi?obj=lyrics 80 | http-bestill.txt
 23.
-24.
-25.
-26.
-27.
-28.
+1. Be still, my soul: The Lord is on thy side;
+With patience bear thy cross of grief or pain.
+Leave to thy God to order and provide;
+In ev'ry change he faithful will remain.
+Be still, my soul: Thy best, thy heav'nly Friend
+Thru thorny ways leads to a joyful end.
+
+2. Be still, my soul: Thy God doth undertake
+To guide the future as he has the past.
+Thy hope, thy confidence let nothing shake;
+All now mysterious shall be bright at last.
+Be still, my soul: The waves and winds still know
+His voice who ruled them while he dwelt below.
+
+3. Be still, my soul: The hour is hast'ning on
+When we shall be forever with the Lord,
+When disappointment, grief, and fear are gone,
+Sorrow forgot, love's purest joys restored.
+Be still, my soul: When change and tears are past,
+All safe and blessed we shall meet at last.
+24. ./client -4 www-notls.imaal.byu.edu/cgi-bin/slowsend.cgi?obj=socket 80 | socket.jpg
+25. c03ce59f9d77e2a3cf001d9dfcb66675ac1a5a81
+26. If no messages are available at the socket, the receive calls wait for a message to arrive, unless the socket is nonblocking (see fcntl(2)), in which case the value -1 is returned
+27. It is not an error if the number of bytes read was fewer than the amount requested. It can haple for a couple of reasons such as fewer bytes are available right now.
+28. When the packet is smaller than the passed buffer, only that much data is returned
