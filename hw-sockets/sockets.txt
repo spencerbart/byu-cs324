@@ -1,0 +1,28 @@
+1. socket and connect
+2. You could use the sendto() or sendmsg() function to send messages via UDP
+3. The strings written to the socket come from the write() command
+4. All ports are the same when running the client once
+5. It uses a different port for each socket when hitting it multiple times
+6. One socket was used for all clients
+7. There was 3 total calls to the write() function on the client
+8. All 3 messages were received by the kernal
+9. 3 calls to recvfrom() were called to process all the messages
+10. recvfrom can only read in one packet. When the packet is smaller than the passed buffer, only that much data is returned.
+11.
+12.
+13.
+14.
+15.
+16.
+17.
+18.
+19.
+20.
+21.
+22.
+23.
+24.
+25.
+26.
+27.
+28.
